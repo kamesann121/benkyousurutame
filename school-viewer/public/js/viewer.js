@@ -4,19 +4,22 @@ window.addEventListener('DOMContentLoaded', () => {
   const scene = new BABYLON.Scene(engine);
   const infoBox = document.getElementById('info');
 
-  // カメラ設定
-  const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 1, 0), scene);
+  // カメラ設定（操作可能＆自動回転）
+  const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2.5, 20, new BABYLON.Vector3(0, 1, 0), scene);
   camera.attachControl(canvas, true);
-  camera.setPosition(new BABYLON.Vector3(0, 5, -10));
-  camera.setTarget(new BABYLON.Vector3(0, 1, 0));
+  camera.lowerRadiusLimit = 2;
+  camera.upperRadiusLimit = 100;
+  camera.wheelDeltaPercentage = 0.01;
+  camera.panningSensibility = 50;
+  camera.useAutoRotationBehavior = true;
 
   // ライト
   const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-  // 地面
-  const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, scene);
+  // 地面（広くて安心！）
+  const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 50, height: 50 }, scene);
   const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
-  groundMat.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0.8);
+  groundMat.diffuseColor = new BABYLON.Color3(0.6, 0.9, 1.0); // 水色っぽく！
   ground.material = groundMat;
 
   // モデル読み込み
@@ -43,15 +46,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
     infoBox.innerHTML = message;
   }, null, (scene, message, exception) => {
-    // 読み込み失敗時の処理
     infoBox.innerHTML = "❌ モデルの読み込みに失敗しました！<br>" + message;
     console.error("読み込みエラー:", message, exception);
   });
 
+  // レンダーループ
   engine.runRenderLoop(() => {
     scene.render();
   });
 
+  // ウィンドウサイズ変更対応
   window.addEventListener('resize', () => {
     engine.resize();
   });
