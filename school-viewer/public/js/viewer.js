@@ -3,7 +3,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const engine = new BABYLON.Engine(canvas, true);
   const scene = new BABYLON.Scene(engine);
 
-  // カメラ設定（高め＆後ろから）
+  // 情報表示用の要素
+  const infoBox = document.getElementById('info');
+
+  // カメラ設定
   const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 1, 0), scene);
   camera.attachControl(canvas, true);
   camera.setPosition(new BABYLON.Vector3(0, 5, -10));
@@ -18,27 +21,25 @@ window.addEventListener('DOMContentLoaded', () => {
   groundMat.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0.8);
   ground.material = groundMat;
 
-  // キャラモデル読み込み（Appendで階層ごと読み込む！）
+  // キャラモデル読み込み
   BABYLON.SceneLoader.Append("/assets/models/", "character.glb", scene, (scene) => {
-    console.log("✅ モデル読み込み完了！");
+    let message = "✅ モデル読み込み完了！<br>";
 
     scene.meshes.forEach((mesh) => {
-      console.log("🔹 メッシュ名:", mesh.name);
-      console.log("   位置:", mesh.position);
-      console.log("   スケール:", mesh.scaling);
-      console.log("   可視状態:", mesh.isVisible);
-
+      message += `🔹 メッシュ名: ${mesh.name}<br>`;
       mesh.scaling = new BABYLON.Vector3(10, 10, 10);
       mesh.position = new BABYLON.Vector3(0, 0, 0);
       mesh.isVisible = true;
     });
 
     if (scene.animationGroups && scene.animationGroups.length > 0) {
-      console.log("🎞️ アニメーション数:", scene.animationGroups.length);
+      message += `🎞️ アニメーション数: ${scene.animationGroups.length}<br>`;
       scene.animationGroups[0].start(true);
     } else {
-      console.log("⚠️ アニメーションなし！");
+      message += "⚠️ アニメーションなし！";
     }
+
+    infoBox.innerHTML = message;
   });
 
   // レンダーループ
