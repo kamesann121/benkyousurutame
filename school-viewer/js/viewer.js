@@ -46,6 +46,14 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
 
         const mesh = meshes.find(m => m.name !== "__root__");
+        const skeleton = skeletons[0] || null;
+        const animGroup = animationGroups[0] || null;
+
+        // 🌟 スケルトンを手動でバインド！
+        if (mesh && skeleton) {
+          mesh.skeleton = skeleton;
+        }
+
         mesh.scaling = new BABYLON.Vector3(0.01, 0.01, 0.01);
         mesh.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
         mesh.position = new BABYLON.Vector3(0, 1, 0);
@@ -53,9 +61,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         mesh.checkCollisions = true;
         mesh.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
         mesh.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
-
-        const skeleton = skeletons[0] || null;
-        const animGroup = animationGroups[0] || null;
 
         resolve({ mesh, skeleton, animGroup });
       });
@@ -83,7 +88,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     const motion = motionFiles[name];
 
-    // 🌟 animationGroup が使えるならそっちを優先！
     if (currentAnimGroup && currentAnimGroup.targetedAnimations.length > 0) {
       currentAnimGroup.loopAnimation = loop;
       currentAnimGroup.reset();
