@@ -4,13 +4,15 @@ window.addEventListener('DOMContentLoaded', () => {
   const scene = new BABYLON.Scene(engine);
   const infoBox = document.getElementById('info');
 
-  // カメラ設定
-  const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2.5, 20, new BABYLON.Vector3(0, 1, 0), scene);
-  camera.attachControl(canvas, true);
-  camera.useAutoRotationBehavior = true;
-  camera.lowerRadiusLimit = 2;
-  camera.upperRadiusLimit = 100;
-  camera.wheelDeltaPercentage = 0.01;
+  // 三人称視点カメラ（FollowCamera）
+  const followCamera = new BABYLON.FollowCamera("FollowCam", new BABYLON.Vector3(0, 5, -10), scene);
+  followCamera.radius = 10;             // キャラとの距離
+  followCamera.heightOffset = 3;        // 高さ
+  followCamera.rotationOffset = 0;      // 角度（0で後ろから）
+  followCamera.cameraAcceleration = 0.05;
+  followCamera.maxCameraSpeed = 10;
+  scene.activeCamera = followCamera;
+  followCamera.attachControl(canvas, true);
 
   // ライト
   const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
@@ -24,7 +26,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let characterMesh = null;
   let isJumping = false;
 
-  // モデル読み込み（__root__除去＋親ノード化）
+  // モデル読み込み（__root__除去＋親ノード化＋サイズ調整）
   BABYLON.SceneLoader.ImportMesh("", "/assets/models/", "character.glb", scene, (meshes, particleSystems, skeletons, animationGroups) => {
     const parent = new BABYLON.TransformNode("characterParent", scene);
 
@@ -36,7 +38,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     characterMesh = parent;
     characterMesh.position = new BABYLON.Vector3(0, 0, 0);
-    characterMesh.scaling = new BABYLON.Vector3(3, 3, 3); // 🔹 小さめに調整
+    characterMesh.scaling = new BABYLON.Vector3(1, 1, 1); // 🔹 サイズ調整（小さくしすぎない）
+
+    followCamera.lockedTarget = characterMesh; // 🔹 カメラがキャラを追いかける！
+
     infoBox.innerHTML = "✅ キャラ読み込み完了！";
 
     if (animationGroups && animationGroups.length > 0) {
