@@ -16,7 +16,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-  // 🌟 地面だけ作成（物理なし）
   const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 100, height: 100 }, scene);
   ground.position.y = 0;
 
@@ -35,6 +34,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   async function loadMotion(name) {
     return new Promise((resolve) => {
       BABYLON.SceneLoader.ImportMesh("", "/assets/models/", motionFiles[name], scene, (meshes, _, __, animationGroups) => {
+        // 🌟 モーション情報を画面に表示！
+        if (infoBox) {
+          infoBox.innerHTML = `🌟 アニメーション数: ${animationGroups.length}<br>`;
+          animationGroups.forEach((group, i) => {
+            infoBox.innerHTML += `Group ${i}: ${group.name}<br>`;
+          });
+        }
+
         const mesh = meshes.find(m => m.name !== "__root__");
         mesh.scaling = new BABYLON.Vector3(0.01, 0.01, 0.01);
         mesh.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
