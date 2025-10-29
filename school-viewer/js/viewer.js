@@ -73,7 +73,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     currentAnimGroup = group;
 
     camera.lockedTarget = characterMesh;
-    currentAnimGroup.start(true);
+
+    // 🌟 モーション再生方法を修正！
+    currentAnimGroup.reset();
+    currentAnimGroup.play(true);
   }
 
   switchMotion("idle");
