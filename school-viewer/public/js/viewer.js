@@ -2,8 +2,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('renderCanvas');
   const engine = new BABYLON.Engine(canvas, true);
   const scene = new BABYLON.Scene(engine);
-
-  // 情報表示用の要素
   const infoBox = document.getElementById('info');
 
   // カメラ設定
@@ -21,33 +19,39 @@ window.addEventListener('DOMContentLoaded', () => {
   groundMat.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0.8);
   ground.material = groundMat;
 
-  // キャラモデル読み込み
+  // モデル読み込み
   BABYLON.SceneLoader.Append("/assets/models/", "character.glb", scene, (scene) => {
     let message = "✅ モデル読み込み完了！<br>";
 
-    scene.meshes.forEach((mesh) => {
-      message += `🔹 メッシュ名: ${mesh.name}<br>`;
-      mesh.scaling = new BABYLON.Vector3(10, 10, 10);
-      mesh.position = new BABYLON.Vector3(0, 0, 0);
-      mesh.isVisible = true;
-    });
-
-    if (scene.animationGroups && scene.animationGroups.length > 0) {
-      message += `🎞️ アニメーション数: ${scene.animationGroups.length}<br>`;
-      scene.animationGroups[0].start(true);
+    if (scene.meshes.length === 0) {
+      message += "⚠️ メッシュが読み込まれませんでした！";
     } else {
-      message += "⚠️ アニメーションなし！";
+      scene.meshes.forEach((mesh) => {
+        message += `🔹 メッシュ名: ${mesh.name}<br>`;
+        mesh.scaling = new BABYLON.Vector3(10, 10, 10);
+        mesh.position = new BABYLON.Vector3(0, 0, 0);
+        mesh.isVisible = true;
+      });
+
+      if (scene.animationGroups && scene.animationGroups.length > 0) {
+        message += `🎞️ アニメーション数: ${scene.animationGroups.length}<br>`;
+        scene.animationGroups[0].start(true);
+      } else {
+        message += "⚠️ アニメーションなし！";
+      }
     }
 
     infoBox.innerHTML = message;
+  }, null, (scene, message, exception) => {
+    // 読み込み失敗時の処理
+    infoBox.innerHTML = "❌ モデルの読み込みに失敗しました！<br>" + message;
+    console.error("読み込みエラー:", message, exception);
   });
 
-  // レンダーループ
   engine.runRenderLoop(() => {
     scene.render();
   });
 
-  // ウィンドウサイズ変更対応
   window.addEventListener('resize', () => {
     engine.resize();
   });
