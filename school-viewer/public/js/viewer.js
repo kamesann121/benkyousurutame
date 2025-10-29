@@ -45,14 +45,17 @@ window.addEventListener('DOMContentLoaded', async () => {
           }
         }
 
-        const mesh = meshes.find(m => m.name !== "__root__");
         const skeleton = skeletons[0] || null;
         const animGroup = animationGroups[0] || null;
 
-        // 🌟 スケルトンを手動でバインド！
-        if (mesh && skeleton) {
-          mesh.skeleton = skeleton;
-        }
+        // 🌟 全メッシュにスケルトンをバインド！
+        meshes.forEach(m => {
+          if (m instanceof BABYLON.Mesh && skeleton) {
+            m.skeleton = skeleton;
+          }
+        });
+
+        const mesh = meshes.find(m => m.name !== "__root__");
 
         mesh.scaling = new BABYLON.Vector3(0.01, 0.01, 0.01);
         mesh.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
