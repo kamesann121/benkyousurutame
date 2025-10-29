@@ -42,13 +42,15 @@ window.addEventListener('DOMContentLoaded', async () => {
           infoBox.innerHTML += `AnimationGroups: ${animationGroups.length}<br>`;
           if (animationGroups[0]) {
             infoBox.innerHTML += `TargetedAnimations: ${animationGroups[0].targetedAnimations.length}<br>`;
+            animationGroups[0].targetedAnimations.forEach((ta, i) => {
+              infoBox.innerHTML += `🎯 Target ${i}: ${ta.target.name}<br>`;
+            });
           }
         }
 
         const skeleton = skeletons[0] || null;
         const animGroup = animationGroups[0] || null;
 
-        // 🌟 全メッシュにスケルトンをバインド！
         meshes.forEach(m => {
           if (m instanceof BABYLON.Mesh && skeleton) {
             m.skeleton = skeleton;
