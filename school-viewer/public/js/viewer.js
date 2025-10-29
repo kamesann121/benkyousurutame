@@ -1,3 +1,11 @@
+// 🌟 エラー表示機能（画面左上に表示）
+window.addEventListener('error', (e) => {
+  const infoBox = document.getElementById('info');
+  if (infoBox) {
+    infoBox.innerHTML = `⚠️ エラー発生: ${e.message}`;
+  }
+});
+
 window.addEventListener('DOMContentLoaded', async () => {
   const canvas = document.getElementById('renderCanvas');
   const engine = new BABYLON.Engine(canvas, true);
