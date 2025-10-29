@@ -4,44 +4,44 @@ window.addEventListener('DOMContentLoaded', () => {
   const scene = new BABYLON.Scene(engine);
   const infoBox = document.getElementById('info');
 
-  // カメラ設定（操作可能＆自動回転）
+  // カメラ設定
   const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2.5, 20, new BABYLON.Vector3(0, 1, 0), scene);
   camera.attachControl(canvas, true);
+  camera.useAutoRotationBehavior = true;
   camera.lowerRadiusLimit = 2;
   camera.upperRadiusLimit = 100;
   camera.wheelDeltaPercentage = 0.01;
-  camera.panningSensibility = 50;
-  camera.useAutoRotationBehavior = true;
 
   // ライト
   const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-  // 地面（広くて安心！）
+  // 地面
   const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 50, height: 50 }, scene);
   const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
-  groundMat.diffuseColor = new BABYLON.Color3(0.6, 0.9, 1.0); // 水色っぽく！
+  groundMat.diffuseColor = new BABYLON.Color3(0.6, 0.9, 1.0);
   ground.material = groundMat;
+
+  let characterMesh = null;
+  let isJumping = false;
 
   // モデル読み込み
   BABYLON.SceneLoader.Append("/assets/models/", "character.glb", scene, (scene) => {
     let message = "✅ モデル読み込み完了！<br>";
 
-    if (scene.meshes.length === 0) {
-      message += "⚠️ メッシュが読み込まれませんでした！";
-    } else {
-      scene.meshes.forEach((mesh) => {
+    scene.meshes.forEach((mesh) => {
+      if (mesh.name !== "__root__") {
+        characterMesh = mesh;
+        characterMesh.scaling = new BABYLON.Vector3(3, 3, 3); // 🔹 小さくした！
+        characterMesh.position = new BABYLON.Vector3(0, 0, 0);
         message += `🔹 メッシュ名: ${mesh.name}<br>`;
-        mesh.scaling = new BABYLON.Vector3(10, 10, 10);
-        mesh.position = new BABYLON.Vector3(0, 0, 0);
-        mesh.isVisible = true;
-      });
-
-      if (scene.animationGroups && scene.animationGroups.length > 0) {
-        message += `🎞️ アニメーション数: ${scene.animationGroups.length}<br>`;
-        scene.animationGroups[0].start(true);
-      } else {
-        message += "⚠️ アニメーションなし！";
       }
+    });
+
+    if (scene.animationGroups && scene.animationGroups.length > 0) {
+      message += `🎞️ アニメーション数: ${scene.animationGroups.length}<br>`;
+      scene.animationGroups[0].start(true);
+    } else {
+      message += "⚠️ アニメーションなし！";
     }
 
     infoBox.innerHTML = message;
@@ -50,12 +50,57 @@ window.addEventListener('DOMContentLoaded', () => {
     console.error("読み込みエラー:", message, exception);
   });
 
-  // レンダーループ
+  // キー操作：Q左 C右 E上 S下 スペースジャンプ
+  window.addEventListener("keydown", (event) => {
+    if (!characterMesh) return;
+
+    const step = 0.5;
+
+    switch (event.key.toLowerCase()) {
+      case "q":
+        characterMesh.position.x -= step;
+        break;
+      case "c":
+        characterMesh.position.x += step;
+        break;
+      case "e":
+        characterMesh.position.y += step;
+        break;
+      case "s":
+        characterMesh.position.y -= step;
+        break;
+      case " ":
+        if (isJumping) return;
+        isJumping = true;
+        const jumpHeight = 2;
+        const jumpSpeed = 0.1;
+        let jumpUp = true;
+
+        const jumpInterval = setInterval(() => {
+          if (!characterMesh) return;
+
+          if (jumpUp) {
+            characterMesh.position.y += jumpSpeed;
+            if (characterMesh.position.y >= jumpHeight) {
+              jumpUp = false;
+            }
+          } else {
+            characterMesh.position.y -= jumpSpeed;
+            if (characterMesh.position.y <= 0) {
+              characterMesh.position.y = 0;
+              clearInterval(jumpInterval);
+              isJumping = false;
+            }
+          }
+        }, 16);
+        break;
+    }
+  });
+
   engine.runRenderLoop(() => {
     scene.render();
   });
 
-  // ウィンドウサイズ変更対応
   window.addEventListener('resize', () => {
     engine.resize();
   });
