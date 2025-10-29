@@ -20,10 +20,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   ground.position.y = 0;
 
   const motionFiles = {
-    idle: "character_idle.glb",
-    walk: "character_walk.glb",
-    run: "character_run.glb",
-    jump: "character_jump.glb"
+    idle: { file: "character_idle.glb", start: 0, end: 100 },
+    walk: { file: "character_walk.glb", start: 0, end: 64 },
+    run:  { file: "character_run.glb",  start: 0, end: 74 },
+    jump: { file: "character_jump.glb", start: 0, end: 116 }
   };
 
   let characterMesh = null;
@@ -33,12 +33,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   async function loadMotion(name) {
     return new Promise((resolve) => {
-      BABYLON.SceneLoader.ImportMesh("", "/assets/models/", motionFiles[name], scene, (meshes, skeletons, __, animationGroups) => {
+      const motion = motionFiles[name];
+      BABYLON.SceneLoader.ImportMesh("", "/assets/models/", motion.file, scene, (meshes, skeletons, __, animationGroups) => {
         if (infoBox) {
-          infoBox.innerHTML = `🌟 アニメーション数: ${animationGroups.length}<br>`;
-          animationGroups.forEach((group, i) => {
-            infoBox.innerHTML += `Group ${i}: ${group.name}<br>`;
-          });
+          infoBox.innerHTML = `🌟 ${name} モーション: ${motion.start}〜${motion.end}<br>`;
         }
 
         const mesh = meshes.find(m => m.name !== "__root__");
@@ -56,7 +54,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  async function switchMotion(name) {
+  async function switchMotion(name, loop = true) {
     if (!motionFiles[name]) return;
 
     if (characterMesh) {
@@ -70,9 +68,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     camera.lockedTarget = characterMesh;
 
-    // 🌟 スケルトンのアニメーションを直接再生！
+    const motion = motionFiles[name];
     if (currentSkeleton) {
-      scene.beginAnimation(currentSkeleton, 0, 100, true);
+      scene.beginAnimation(currentSkeleton, motion.start, motion.end, loop);
     }
   }
 
@@ -90,7 +88,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (!characterMesh || isJumping) return;
     isJumping = true;
 
-    switchMotion("jump").then(() => {
+    switchMotion("jump", false).then(() => {
       const jumpHeight = 1.5;
       const jumpSpeed = 0.08;
       let jumpUp = true;
