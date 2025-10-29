@@ -24,27 +24,22 @@ window.addEventListener('DOMContentLoaded', () => {
   let characterMesh = null;
   let isJumping = false;
 
-  // モデル読み込み
-  BABYLON.SceneLoader.Append("/assets/models/", "character.glb", scene, (scene) => {
-    let message = "✅ モデル読み込み完了！<br>";
+  // モデル読み込み（自分のキャラとして取得！）
+  BABYLON.SceneLoader.ImportMesh("", "/assets/models/", "character.glb", scene, (meshes, particleSystems, skeletons, animationGroups) => {
+    characterMesh = meshes.find(mesh => mesh.name !== "__root__");
 
-    scene.meshes.forEach((mesh) => {
-      if (mesh.name !== "__root__") {
-        characterMesh = mesh;
-        characterMesh.scaling = new BABYLON.Vector3(3, 3, 3); // 🔹 小さくした！
-        characterMesh.position = new BABYLON.Vector3(0, 0, 0);
-        message += `🔹 メッシュ名: ${mesh.name}<br>`;
+    if (characterMesh) {
+      characterMesh.scaling = new BABYLON.Vector3(3, 3, 3); // 🔹 小さめに調整
+      characterMesh.position = new BABYLON.Vector3(0, 0, 0);
+      infoBox.innerHTML = "✅ キャラ読み込み完了！";
+
+      // アニメーションがあれば再生
+      if (animationGroups && animationGroups.length > 0) {
+        animationGroups[0].start(true);
       }
-    });
-
-    if (scene.animationGroups && scene.animationGroups.length > 0) {
-      message += `🎞️ アニメーション数: ${scene.animationGroups.length}<br>`;
-      scene.animationGroups[0].start(true);
     } else {
-      message += "⚠️ アニメーションなし！";
+      infoBox.innerHTML = "⚠️ キャラメッシュが見つかりませんでした！";
     }
-
-    infoBox.innerHTML = message;
   }, null, (scene, message, exception) => {
     infoBox.innerHTML = "❌ モデルの読み込みに失敗しました！<br>" + message;
     console.error("読み込みエラー:", message, exception);
