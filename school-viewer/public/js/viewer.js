@@ -3,36 +3,44 @@ window.addEventListener('DOMContentLoaded', () => {
   const engine = new BABYLON.Engine(canvas, true);
   const scene = new BABYLON.Scene(engine);
 
-  const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2.5, 6, new BABYLON.Vector3(0, 1, 0), scene);
+  // カメラ設定（ちょっと高め＆後ろから見る）
+  const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2.5, 10, new BABYLON.Vector3(0, 1, 0), scene);
   camera.attachControl(canvas, true);
+  camera.setPosition(new BABYLON.Vector3(0, 5, -10));
+  camera.setTarget(new BABYLON.Vector3(0, 1, 0));
 
+  // ライト
   const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
+  // 地面
   const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, scene);
   const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
   groundMat.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0.8);
   ground.material = groundMat;
 
-  // キャラモデル読み込み
-  BABYLON.SceneLoader.ImportMesh("", "/assets/models/", "character.glb", scene, (meshes, particleSystems, skeletons, animationGroups) => {
-    console.log("読み込んだメッシュ数:", meshes.length);
+  // キャラモデル読み込み（Appendで階層ごと読み込む！）
+  BABYLON.SceneLoader.Append("/assets/models/", "character.glb", scene, (scene) => {
+    console.log("モデル読み込み完了！");
 
-    meshes.forEach((mesh) => {
-      mesh.position = new BABYLON.Vector3(0, 0, 0);
+    scene.meshes.forEach((mesh) => {
       mesh.scaling = new BABYLON.Vector3(10, 10, 10); // ← 大きくして見逃し防止！
+      mesh.position = new BABYLON.Vector3(0, 0, 0);
       mesh.isVisible = true;
-      console.log("表示メッシュ:", mesh.name);
+      console.log("メッシュ:", mesh.name);
     });
 
-    if (animationGroups.length > 0) {
-      animationGroups[0].start(true);
+    // アニメーションがあれば再生
+    if (scene.animationGroups && scene.animationGroups.length > 0) {
+      scene.animationGroups[0].start(true);
     }
   });
 
+  // レンダーループ
   engine.runRenderLoop(() => {
     scene.render();
   });
 
+  // ウィンドウサイズ変更対応
   window.addEventListener('resize', () => {
     engine.resize();
   });
