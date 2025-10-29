@@ -22,67 +22,58 @@ window.addEventListener('DOMContentLoaded', () => {
   scene.collisionsEnabled = true;
 
   let characterMesh = null;
-  let currentAnim = null;
+  let currentAnimGroup = null;
   let isJumping = false;
   const keysPressed = {};
 
-  const animations = {
-    idle: null,
-    walk: null,
-    run: null,
-    jump: null
+  const motionFiles = {
+    idle: "character_idle.glb",
+    walk: "character_walk.glb",
+    run: "character_run.glb",
+    jump: "character_jump.glb"
   };
 
-  function loadCharacter(file, key) {
+  async function loadMotion(name) {
     return new Promise((resolve) => {
-      BABYLON.SceneLoader.ImportMesh("", "/assets/models/", file, scene, (meshes, _, __, animationGroups) => {
+      BABYLON.SceneLoader.ImportMesh("", "/assets/models/", motionFiles[name], scene, (meshes, _, __, animationGroups) => {
         const mesh = meshes.find(m => m.name !== "__root__");
         mesh.scaling = new BABYLON.Vector3(0.01, 0.01, 0.01);
         mesh.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI, 0);
         mesh.position = new BABYLON.Vector3(0, 1, 0);
-        mesh.setEnabled(false);
 
         mesh.checkCollisions = true;
         mesh.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
         mesh.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
 
-        animations[key] = {
-          mesh: mesh,
-          group: animationGroups[0]
-        };
-
-        resolve();
+        resolve({ mesh, group: animationGroups[0] });
       });
     });
   }
 
-  Promise.all([
-    loadCharacter("character_idle.glb", "idle"),
-    loadCharacter("character_walk.glb", "walk"),
-    loadCharacter("character_run.glb", "run"),
-    loadCharacter("character_jump.glb", "jump")
-  ]).then(() => {
-    characterMesh = animations.idle.mesh;
-    characterMesh.setEnabled(true);
+  async function switchMotion(name) {
+    if (!motionFiles[name]) return;
+
+    if (characterMesh) {
+      characterMesh.dispose();
+      characterMesh = null;
+    }
+    if (currentAnimGroup) {
+      currentAnimGroup.stop();
+      currentAnimGroup = null;
+    }
+
+    const { mesh, group } = await loadMotion(name);
+    characterMesh = mesh;
+    currentAnimGroup = group;
+
     camera.lockedTarget = characterMesh;
-    animations.idle.group.start(true);
-    currentAnim = "idle";
-    infoBox.innerHTML = "✅ キャラとモーション読み込み完了！";
-  });
-
-  function switchAnimation(name) {
-    if (currentAnim === name || !animations[name]) return;
-
-    animations[currentAnim].group.stop();
-    animations[currentAnim].mesh.setEnabled(false);
-
-    characterMesh = animations[name].mesh;
-    characterMesh.setEnabled(true);
-    camera.lockedTarget = characterMesh;
-    animations[name].group.start(true);
-
-    currentAnim = name;
+    currentAnimGroup.start(true);
   }
+
+  // 初期状態：Idle
+  switchMotion("idle").then(() => {
+    infoBox.innerHTML = "✅ モーション切り替え準備完了！";
+  });
 
   window.addEventListener("keydown", (event) => {
     keysPressed[event.key.toLowerCase()] = true;
@@ -95,30 +86,31 @@ window.addEventListener('DOMContentLoaded', () => {
   function handleJump() {
     if (!characterMesh || isJumping) return;
     isJumping = true;
-    switchAnimation("jump");
 
-    const jumpHeight = 1.5;
-    const jumpSpeed = 0.08;
-    let jumpUp = true;
+    switchMotion("jump").then(() => {
+      const jumpHeight = 1.5;
+      const jumpSpeed = 0.08;
+      let jumpUp = true;
 
-    const jumpInterval = setInterval(() => {
-      if (!characterMesh) return;
+      const jumpInterval = setInterval(() => {
+        if (!characterMesh) return;
 
-      if (jumpUp) {
-        characterMesh.position.y += jumpSpeed;
-        if (characterMesh.position.y >= jumpHeight) {
-          jumpUp = false;
+        if (jumpUp) {
+          characterMesh.position.y += jumpSpeed;
+          if (characterMesh.position.y >= jumpHeight) {
+            jumpUp = false;
+          }
+        } else {
+          characterMesh.position.y -= jumpSpeed;
+          if (characterMesh.position.y <= 1) {
+            characterMesh.position.y = 1;
+            clearInterval(jumpInterval);
+            isJumping = false;
+            switchMotion("idle");
+          }
         }
-      } else {
-        characterMesh.position.y -= jumpSpeed;
-        if (characterMesh.position.y <= 1) {
-          characterMesh.position.y = 1;
-          clearInterval(jumpInterval);
-          isJumping = false;
-          switchAnimation("idle");
-        }
-      }
-    }, 16);
+      }, 16);
+    });
   }
 
   engine.runRenderLoop(() => {
@@ -133,9 +125,9 @@ window.addEventListener('DOMContentLoaded', () => {
         if (keysPressed["s"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(0, 0, speed));
         if (keysPressed[" "]) handleJump();
 
-        switchAnimation(keysPressed["shift"] ? "run" : "walk");
+        switchMotion(keysPressed["shift"] ? "run" : "walk");
       } else if (!isJumping) {
-        switchAnimation("idle");
+        switchMotion("idle");
       }
     }
 
