@@ -28,6 +28,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   let characterMesh = null;
   let currentSkeleton = null;
+  let currentAnimGroup = null;
   let isJumping = false;
   const keysPressed = {};
 
@@ -37,6 +38,11 @@ window.addEventListener('DOMContentLoaded', async () => {
       BABYLON.SceneLoader.ImportMesh("", "/assets/models/", motion.file, scene, (meshes, skeletons, __, animationGroups) => {
         if (infoBox) {
           infoBox.innerHTML = `🌟 ${name} モーション: ${motion.start}〜${motion.end}<br>`;
+          infoBox.innerHTML += `Skeletons: ${skeletons.length}<br>`;
+          infoBox.innerHTML += `AnimationGroups: ${animationGroups.length}<br>`;
+          if (animationGroups[0]) {
+            infoBox.innerHTML += `TargetedAnimations: ${animationGroups[0].targetedAnimations.length}<br>`;
+          }
         }
 
         const mesh = meshes.find(m => m.name !== "__root__");
@@ -48,8 +54,10 @@ window.addEventListener('DOMContentLoaded', async () => {
         mesh.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
         mesh.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
 
-        const skeleton = skeletons[0];
-        resolve({ mesh, skeleton });
+        const skeleton = skeletons[0] || null;
+        const animGroup = animationGroups[0] || null;
+
+        resolve({ mesh, skeleton, animGroup });
       });
     });
   }
@@ -61,16 +69,31 @@ window.addEventListener('DOMContentLoaded', async () => {
       characterMesh.dispose();
       characterMesh = null;
     }
+    if (currentAnimGroup) {
+      currentAnimGroup.stop();
+      currentAnimGroup = null;
+    }
 
-    const { mesh, skeleton } = await loadMotion(name);
+    const { mesh, skeleton, animGroup } = await loadMotion(name);
     characterMesh = mesh;
     currentSkeleton = skeleton;
+    currentAnimGroup = animGroup;
 
     camera.lockedTarget = characterMesh;
 
     const motion = motionFiles[name];
-    if (currentSkeleton) {
+
+    // 🌟 animationGroup が使えるならそっちを優先！
+    if (currentAnimGroup && currentAnimGroup.targetedAnimations.length > 0) {
+      currentAnimGroup.loopAnimation = loop;
+      currentAnimGroup.reset();
+      currentAnimGroup.play(loop);
+    } else if (currentSkeleton) {
       scene.beginAnimation(currentSkeleton, motion.start, motion.end, loop);
+    } else {
+      if (infoBox) {
+        infoBox.innerHTML += `<br>⚠️ モーション再生できませんでした`;
+      }
     }
   }
 
