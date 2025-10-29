@@ -4,13 +4,13 @@ window.addEventListener('DOMContentLoaded', () => {
   const scene = new BABYLON.Scene(engine);
   const infoBox = document.getElementById('info');
 
-  // 三人称視点カメラ（フォートナイト風に固定）
+  // カメラ（フォートナイト風に固定）
   const camera = new BABYLON.ArcRotateCamera("ThirdPersonCam", Math.PI, Math.PI / 2.2, 6, new BABYLON.Vector3(0, 1, 0), scene);
   camera.attachControl(canvas, true);
   camera.lowerRadiusLimit = 6;
   camera.upperRadiusLimit = 6;
   camera.panningSensibility = 0;
-  camera.inputs.attached.mousewheel.detachControl(); // ズーム禁止
+  camera.inputs.attached.mousewheel.detachControl();
 
   // ライト
   const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
@@ -28,7 +28,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let isJumping = false;
   const keysPressed = {};
 
-  // モデル読み込み（サイズ・向き・接地・当たり判定）
+  // モデル読み込み＋アニメーション名表示
   BABYLON.SceneLoader.ImportMesh("", "/assets/models/", "character.glb", scene, (meshes, _, __, animationGroups) => {
     characterMesh = meshes.find(mesh => mesh.name !== "__root__");
 
@@ -41,16 +41,18 @@ window.addEventListener('DOMContentLoaded', () => {
     characterMesh.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI, 0);
     characterMesh.position = new BABYLON.Vector3(0, 1, 0);
 
-    // 当たり判定設定
+    // 当たり判定
     characterMesh.checkCollisions = true;
     characterMesh.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
     characterMesh.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
 
     camera.lockedTarget = characterMesh;
 
-    infoBox.innerHTML = "✅ キャラ読み込み完了！";
+    // 🔹 アニメーション名を画面に表示！
+    let animList = animationGroups.map((group, i) => `[#${i}] ${group.name}`).join("<br>");
+    infoBox.innerHTML = "✅ キャラ読み込み完了！<br><br>🎬 アニメーション一覧:<br>" + animList;
 
-    if (animationGroups && animationGroups.length > 0) {
+    if (animationGroups.length > 0) {
       animationGroups[0].start(true);
     }
   }, null, (scene, message, exception) => {
