@@ -24,21 +24,23 @@ window.addEventListener('DOMContentLoaded', () => {
   let characterMesh = null;
   let isJumping = false;
 
-  // モデル読み込み（自分のキャラとして取得！）
+  // モデル読み込み（__root__除去＋親ノード化）
   BABYLON.SceneLoader.ImportMesh("", "/assets/models/", "character.glb", scene, (meshes, particleSystems, skeletons, animationGroups) => {
-    characterMesh = meshes.find(mesh => mesh.name !== "__root__");
+    const parent = new BABYLON.TransformNode("characterParent", scene);
 
-    if (characterMesh) {
-      characterMesh.scaling = new BABYLON.Vector3(3, 3, 3); // 🔹 小さめに調整
-      characterMesh.position = new BABYLON.Vector3(0, 0, 0);
-      infoBox.innerHTML = "✅ キャラ読み込み完了！";
-
-      // アニメーションがあれば再生
-      if (animationGroups && animationGroups.length > 0) {
-        animationGroups[0].start(true);
+    meshes.forEach((mesh) => {
+      if (mesh.name !== "__root__") {
+        mesh.parent = parent;
       }
-    } else {
-      infoBox.innerHTML = "⚠️ キャラメッシュが見つかりませんでした！";
+    });
+
+    characterMesh = parent;
+    characterMesh.position = new BABYLON.Vector3(0, 0, 0);
+    characterMesh.scaling = new BABYLON.Vector3(3, 3, 3); // 🔹 小さめに調整
+    infoBox.innerHTML = "✅ キャラ読み込み完了！";
+
+    if (animationGroups && animationGroups.length > 0) {
+      animationGroups[0].start(true);
     }
   }, null, (scene, message, exception) => {
     infoBox.innerHTML = "❌ モデルの読み込みに失敗しました！<br>" + message;
