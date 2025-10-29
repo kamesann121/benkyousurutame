@@ -24,20 +24,18 @@ window.addEventListener('DOMContentLoaded', () => {
   let characterMesh = null;
   let isJumping = false;
 
-  // モデル読み込み（TransformNodeでまとめて、サイズ＆向き＆位置調整）
+  // モデル読み込み（サイズ・向き・接地調整）
   BABYLON.SceneLoader.ImportMesh("", "/assets/models/", "character.glb", scene, (meshes, _, __, animationGroups) => {
-    const parent = new BABYLON.TransformNode("characterParent", scene);
+    characterMesh = meshes.find(mesh => mesh.name !== "__root__");
 
-    meshes.forEach((mesh) => {
-      if (mesh.name !== "__root__") {
-        mesh.parent = parent;
-      }
-    });
+    if (!characterMesh) {
+      infoBox.innerHTML = "⚠️ キャラメッシュが見つかりません！";
+      return;
+    }
 
-    characterMesh = parent;
     characterMesh.scaling = new BABYLON.Vector3(0.01, 0.01, 0.01); // 🔹 自然なサイズ
-    characterMesh.rotation = new BABYLON.Vector3(0, Math.PI, 0);   // 🔹 正面向き
-    characterMesh.position = new BABYLON.Vector3(0, 1, 0);         // 🔹 地面に立たせる
+    characterMesh.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI, 0); // 🔹 X軸回転で立たせる
+    characterMesh.position = new BABYLON.Vector3(0, 1, 0); // 🔹 地面に立たせる
 
     camera.lockedTarget = characterMesh; // カメラがキャラを中心に見渡す
 
