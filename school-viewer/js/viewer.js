@@ -4,15 +4,13 @@ window.addEventListener('DOMContentLoaded', () => {
   const scene = new BABYLON.Scene(engine);
   const infoBox = document.getElementById('info');
 
-  // 三人称視点カメラ（FollowCamera）
-  const followCamera = new BABYLON.FollowCamera("FollowCam", new BABYLON.Vector3(0, 5, -10), scene);
-  followCamera.radius = 10;             // キャラとの距離
-  followCamera.heightOffset = 3;        // 高さ
-  followCamera.rotationOffset = 0;      // 角度（0で後ろから）
-  followCamera.cameraAcceleration = 0.05;
-  followCamera.maxCameraSpeed = 10;
-  scene.activeCamera = followCamera;
-  followCamera.attachControl(canvas, true);
+  // 三人称視点カメラ（ArcRotateCameraで見渡し可能）
+  const camera = new BABYLON.ArcRotateCamera("ThirdPersonCam", Math.PI / 2, Math.PI / 2.5, 10, BABYLON.Vector3.Zero(), scene);
+  camera.attachControl(canvas, true);
+  camera.lowerRadiusLimit = 5;
+  camera.upperRadiusLimit = 20;
+  camera.wheelDeltaPercentage = 0.01;
+  camera.useAutoRotationBehavior = false;
 
   // ライト
   const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
@@ -26,7 +24,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let characterMesh = null;
   let isJumping = false;
 
-  // モデル読み込み（__root__除去＋親ノード化＋サイズ調整）
+  // モデル読み込み（TransformNodeでまとめて、立ち姿に調整）
   BABYLON.SceneLoader.ImportMesh("", "/assets/models/", "character.glb", scene, (meshes, particleSystems, skeletons, animationGroups) => {
     const parent = new BABYLON.TransformNode("characterParent", scene);
 
@@ -38,9 +36,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     characterMesh = parent;
     characterMesh.position = new BABYLON.Vector3(0, 0, 0);
-    characterMesh.scaling = new BABYLON.Vector3(1, 1, 1); // 🔹 サイズ調整（小さくしすぎない）
+    characterMesh.scaling = new BABYLON.Vector3(1, 1, 1);
+    characterMesh.rotation = new BABYLON.Vector3(-Math.PI / 2, Math.PI, 0); // 🔹 立ち姿に修正！
 
-    followCamera.lockedTarget = characterMesh; // 🔹 カメラがキャラを追いかける！
+    camera.lockedTarget = characterMesh; // 🔹 カメラがキャラを中心に見渡す！
 
     infoBox.innerHTML = "✅ キャラ読み込み完了！";
 
@@ -52,6 +51,26 @@ window.addEventListener('DOMContentLoaded', () => {
     console.error("読み込みエラー:", message, exception);
   });
 
+  // 滑らか移動関数
+  function smoothMove(mesh, direction, distance, duration = 200) {
+    const start = mesh.position.clone();
+    const end = start.add(direction.scale(distance));
+
+    const animation = new BABYLON.Animation("moveAnim", "position", 60,
+      BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+      BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+
+    const keys = [
+      { frame: 0, value: start },
+      { frame: 60, value: end }
+    ];
+
+    animation.setKeys(keys);
+    mesh.animations = [];
+    mesh.animations.push(animation);
+    scene.beginAnimation(mesh, 0, 60, false);
+  }
+
   // キー操作：Q左 C右 E上 S下 スペースジャンプ
   window.addEventListener("keydown", (event) => {
     if (!characterMesh) return;
@@ -60,16 +79,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
     switch (event.key.toLowerCase()) {
       case "q":
-        characterMesh.position.x -= step;
+        smoothMove(characterMesh, new BABYLON.Vector3(-1, 0, 0), step);
         break;
       case "c":
-        characterMesh.position.x += step;
+        smoothMove(characterMesh, new BABYLON.Vector3(1, 0, 0), step);
         break;
       case "e":
-        characterMesh.position.y += step;
+        smoothMove(characterMesh, new BABYLON.Vector3(0, 1, 0), step);
         break;
       case "s":
-        characterMesh.position.y -= step;
+        smoothMove(characterMesh, new BABYLON.Vector3(0, -1, 0), step);
         break;
       case " ":
         if (isJumping) return;
