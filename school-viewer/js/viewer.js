@@ -24,7 +24,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let characterMesh = null;
   let isJumping = false;
 
-  // モデル読み込み（TransformNodeでまとめて、サイズ＆向き調整）
+  // モデル読み込み（TransformNodeでまとめて、サイズ＆向き＆位置調整）
   BABYLON.SceneLoader.ImportMesh("", "/assets/models/", "character.glb", scene, (meshes, _, __, animationGroups) => {
     const parent = new BABYLON.TransformNode("characterParent", scene);
 
@@ -35,9 +35,9 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     characterMesh = parent;
-    characterMesh.position = new BABYLON.Vector3(0, 0, 0); // 地面に立たせる
-    characterMesh.scaling = new BABYLON.Vector3(0.01, 0.01, 0.01); // 🔹 サイズ調整（自然な大きさ）
-    characterMesh.rotation = new BABYLON.Vector3(0, Math.PI, 0); // 🔹 向き調整（正面向き）
+    characterMesh.scaling = new BABYLON.Vector3(0.01, 0.01, 0.01); // 🔹 自然なサイズ
+    characterMesh.rotation = new BABYLON.Vector3(0, Math.PI, 0);   // 🔹 正面向き
+    characterMesh.position = new BABYLON.Vector3(0, 1, 0);         // 🔹 地面に立たせる
 
     camera.lockedTarget = characterMesh; // カメラがキャラを中心に見渡す
 
@@ -107,8 +107,8 @@ window.addEventListener('DOMContentLoaded', () => {
             }
           } else {
             characterMesh.position.y -= jumpSpeed;
-            if (characterMesh.position.y <= 0) {
-              characterMesh.position.y = 0;
+            if (characterMesh.position.y <= 1) {
+              characterMesh.position.y = 1;
               clearInterval(jumpInterval);
               isJumping = false;
             }
