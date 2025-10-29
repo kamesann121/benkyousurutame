@@ -74,7 +74,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     camera.lockedTarget = characterMesh;
 
-    // 🌟 モーション再生方法を修正！
+    // 🌟 モーション再生の波を強化！
+    currentAnimGroup.loopAnimation = true;
     currentAnimGroup.reset();
     currentAnimGroup.play(true);
   }
