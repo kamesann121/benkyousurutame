@@ -27,14 +27,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   };
 
   let characterMesh = null;
-  let currentAnimGroup = null;
+  let currentSkeleton = null;
   let isJumping = false;
   const keysPressed = {};
 
   async function loadMotion(name) {
     return new Promise((resolve) => {
-      BABYLON.SceneLoader.ImportMesh("", "/assets/models/", motionFiles[name], scene, (meshes, _, __, animationGroups) => {
-        // 🌟 モーション情報を画面に表示！
+      BABYLON.SceneLoader.ImportMesh("", "/assets/models/", motionFiles[name], scene, (meshes, skeletons, __, animationGroups) => {
         if (infoBox) {
           infoBox.innerHTML = `🌟 アニメーション数: ${animationGroups.length}<br>`;
           animationGroups.forEach((group, i) => {
@@ -51,7 +50,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         mesh.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
         mesh.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
 
-        resolve({ mesh, group: animationGroups[0] });
+        const skeleton = skeletons[0];
+        resolve({ mesh, skeleton });
       });
     });
   }
@@ -63,21 +63,17 @@ window.addEventListener('DOMContentLoaded', async () => {
       characterMesh.dispose();
       characterMesh = null;
     }
-    if (currentAnimGroup) {
-      currentAnimGroup.stop();
-      currentAnimGroup = null;
-    }
 
-    const { mesh, group } = await loadMotion(name);
+    const { mesh, skeleton } = await loadMotion(name);
     characterMesh = mesh;
-    currentAnimGroup = group;
+    currentSkeleton = skeleton;
 
     camera.lockedTarget = characterMesh;
 
-    // 🌟 モーション再生の波を強化！
-    currentAnimGroup.loopAnimation = true;
-    currentAnimGroup.reset();
-    currentAnimGroup.play(true);
+    // 🌟 スケルトンのアニメーションを直接再生！
+    if (currentSkeleton) {
+      scene.beginAnimation(currentSkeleton, 0, 100, true);
+    }
   }
 
   switchMotion("idle");
