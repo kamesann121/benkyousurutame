@@ -4,11 +4,11 @@ window.addEventListener('DOMContentLoaded', () => {
   const scene = new BABYLON.Scene(engine);
   const infoBox = document.getElementById('info');
 
-  // 三人称視点カメラ（ArcRotateCameraで見渡し可能）
-  const camera = new BABYLON.ArcRotateCamera("ThirdPersonCam", Math.PI / 2, Math.PI / 2.5, 10, BABYLON.Vector3.Zero(), scene);
+  // 三人称視点カメラ（キャラの後ろから見渡せる）
+  const camera = new BABYLON.ArcRotateCamera("ThirdPersonCam", Math.PI, Math.PI / 2.2, 6, new BABYLON.Vector3(0, 1, 0), scene);
   camera.attachControl(canvas, true);
-  camera.lowerRadiusLimit = 5;
-  camera.upperRadiusLimit = 20;
+  camera.lowerRadiusLimit = 4;
+  camera.upperRadiusLimit = 10;
   camera.wheelDeltaPercentage = 0.01;
   camera.useAutoRotationBehavior = false;
 
@@ -16,16 +16,16 @@ window.addEventListener('DOMContentLoaded', () => {
   const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
   // 地面
-  const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 50, height: 50 }, scene);
+  const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 100, height: 100 }, scene);
   const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
-  groundMat.diffuseColor = new BABYLON.Color3(0.6, 0.9, 1.0);
+  groundMat.diffuseColor = new BABYLON.Color3(0.4, 0.8, 0.4); // 草っぽい色
   ground.material = groundMat;
 
   let characterMesh = null;
   let isJumping = false;
 
-  // モデル読み込み（TransformNodeでまとめて、立ち姿に調整）
-  BABYLON.SceneLoader.ImportMesh("", "/assets/models/", "character.glb", scene, (meshes, particleSystems, skeletons, animationGroups) => {
+  // モデル読み込み（TransformNodeでまとめて、サイズ＆向き調整）
+  BABYLON.SceneLoader.ImportMesh("", "/assets/models/", "character.glb", scene, (meshes, _, __, animationGroups) => {
     const parent = new BABYLON.TransformNode("characterParent", scene);
 
     meshes.forEach((mesh) => {
@@ -35,11 +35,11 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     characterMesh = parent;
-    characterMesh.position = new BABYLON.Vector3(0, 0, 0);
-    characterMesh.scaling = new BABYLON.Vector3(1, 1, 1);
-    characterMesh.rotation = new BABYLON.Vector3(-Math.PI / 2, Math.PI, 0); // 🔹 立ち姿に修正！
+    characterMesh.position = new BABYLON.Vector3(0, 0, 0); // 地面に立たせる
+    characterMesh.scaling = new BABYLON.Vector3(0.01, 0.01, 0.01); // 🔹 サイズ調整（自然な大きさ）
+    characterMesh.rotation = new BABYLON.Vector3(0, Math.PI, 0); // 🔹 向き調整（正面向き）
 
-    camera.lockedTarget = characterMesh; // 🔹 カメラがキャラを中心に見渡す！
+    camera.lockedTarget = characterMesh; // カメラがキャラを中心に見渡す
 
     infoBox.innerHTML = "✅ キャラ読み込み完了！";
 
@@ -52,7 +52,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   // 滑らか移動関数
-  function smoothMove(mesh, direction, distance, duration = 200) {
+  function smoothMove(mesh, direction, distance) {
     const start = mesh.position.clone();
     const end = start.add(direction.scale(distance));
 
@@ -85,16 +85,16 @@ window.addEventListener('DOMContentLoaded', () => {
         smoothMove(characterMesh, new BABYLON.Vector3(1, 0, 0), step);
         break;
       case "e":
-        smoothMove(characterMesh, new BABYLON.Vector3(0, 1, 0), step);
+        smoothMove(characterMesh, new BABYLON.Vector3(0, 0, -1), step);
         break;
       case "s":
-        smoothMove(characterMesh, new BABYLON.Vector3(0, -1, 0), step);
+        smoothMove(characterMesh, new BABYLON.Vector3(0, 0, 1), step);
         break;
       case " ":
         if (isJumping) return;
         isJumping = true;
-        const jumpHeight = 2;
-        const jumpSpeed = 0.1;
+        const jumpHeight = 1.5;
+        const jumpSpeed = 0.08;
         let jumpUp = true;
 
         const jumpInterval = setInterval(() => {
