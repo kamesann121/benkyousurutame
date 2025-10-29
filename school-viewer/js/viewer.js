@@ -38,12 +38,17 @@ window.addEventListener('DOMContentLoaded', () => {
       BABYLON.SceneLoader.ImportMesh("", "/assets/models/", motionFiles[name], scene, (meshes, _, __, animationGroups) => {
         const mesh = meshes.find(m => m.name !== "__root__");
         mesh.scaling = new BABYLON.Vector3(0.01, 0.01, 0.01);
-        mesh.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI, 0);
+        mesh.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0); // ← Y軸の回転を修正！
         mesh.position = new BABYLON.Vector3(0, 1, 0);
 
         mesh.checkCollisions = true;
         mesh.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
         mesh.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
+
+        // モーション確認ログ
+        animationGroups.forEach((group, i) => {
+          console.log(`[#${i}] ${group.name}`);
+        });
 
         resolve({ mesh, group: animationGroups[0] });
       });
