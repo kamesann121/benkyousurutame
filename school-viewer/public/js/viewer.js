@@ -13,12 +13,21 @@ window.addEventListener('DOMContentLoaded', () => {
   groundMat.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0.8);
   ground.material = groundMat;
 
-  // テスト用ボックス（キャラの代わり）
-  const box = BABYLON.MeshBuilder.CreateBox("testBox", { size: 1 }, scene);
-  box.position.y = 0.5;
-  const boxMat = new BABYLON.StandardMaterial("boxMat", scene);
-  boxMat.diffuseColor = new BABYLON.Color3(1, 0, 0);
-  box.material = boxMat;
+  // キャラモデル読み込み
+  BABYLON.SceneLoader.ImportMesh("", "/assets/models/", "character.glb", scene, (meshes, particleSystems, skeletons, animationGroups) => {
+    console.log("読み込んだメッシュ数:", meshes.length);
+
+    meshes.forEach((mesh) => {
+      mesh.position = new BABYLON.Vector3(0, 0, 0);
+      mesh.scaling = new BABYLON.Vector3(10, 10, 10); // ← 大きくして見逃し防止！
+      mesh.isVisible = true;
+      console.log("表示メッシュ:", mesh.name);
+    });
+
+    if (animationGroups.length > 0) {
+      animationGroups[0].start(true);
+    }
+  });
 
   engine.runRenderLoop(() => {
     scene.render();
