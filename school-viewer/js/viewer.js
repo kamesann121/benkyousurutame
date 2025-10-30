@@ -13,6 +13,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   const camera = new BABYLON.ArcRotateCamera("cam", Math.PI, Math.PI / 2.2, 6, new BABYLON.Vector3(0, 1, 0), scene);
   camera.attachControl(canvas, true);
+  camera.useFramingBehavior = true;
+  camera.framingBehavior.elevationReturnTime = -1;
 
   const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
@@ -120,7 +122,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     const keyFrames = [
       { frame: 0, value: 1 },
+      { frame: 5, value: 1.3 },
+      { frame: 10, value: 1.7 },
       { frame: 15, value: 2 },
+      { frame: 20, value: 1.7 },
+      { frame: 25, value: 1.3 },
       { frame: 30, value: 1 }
     ];
 
