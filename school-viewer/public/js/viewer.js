@@ -22,60 +22,20 @@ window.addEventListener('DOMContentLoaded', async () => {
   ground.position.y = 0;
 
   const motionFiles = {
-    idle: { file: "character_idle.glb", start: 0, end: 100 },
-    walk: { file: "character_walk.glb", start: 0, end: 64 },
-    run:  { file: "character_run.glb",  start: 0, end: 74 },
-    jump: { file: "character_jump.glb", start: 0, end: 116 }
+    idle: "character_idle.glb",
+    walk: "character_walk.glb",
+    run:  "character_run.glb",
+    jump: "character_jump.glb"
   };
 
   let characterMesh = null;
-  let currentSkeleton = null;
   let currentAnimGroup = null;
-  let isJumping = false;
+  let currentMotionName = "";
   const keysPressed = {};
 
-  async function loadMotion(name) {
-    return new Promise((resolve) => {
-      const motion = motionFiles[name];
-      BABYLON.SceneLoader.ImportMesh("", "/assets/models/", motion.file, scene, (meshes, skeletons, __, animationGroups) => {
-        if (infoBox) {
-          infoBox.innerHTML = `🌟 ${name} モーション: ${motion.start}〜${motion.end}<br>`;
-          infoBox.innerHTML += `Skeletons: ${skeletons.length}<br>`;
-          infoBox.innerHTML += `AnimationGroups: ${animationGroups.length}<br>`;
-          if (animationGroups[0]) {
-            infoBox.innerHTML += `TargetedAnimations: ${animationGroups[0].targetedAnimations.length}<br>`;
-            animationGroups[0].targetedAnimations.forEach((ta, i) => {
-              infoBox.innerHTML += `🎯 Target ${i}: ${ta.target.name}<br>`;
-            });
-          }
-        }
-
-        const skeleton = skeletons[0] || null;
-        const animGroup = animationGroups[0] || null;
-
-        meshes.forEach(m => {
-          if (m instanceof BABYLON.Mesh && skeleton) {
-            m.skeleton = skeleton;
-          }
-        });
-
-        const mesh = meshes.find(m => m.name !== "__root__");
-
-        mesh.scaling = new BABYLON.Vector3(0.01, 0.01, 0.01);
-        mesh.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
-        mesh.position = new BABYLON.Vector3(0, 1, 0);
-
-        mesh.checkCollisions = true;
-        mesh.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
-        mesh.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0);
-
-        resolve({ mesh, skeleton, animGroup });
-      });
-    });
-  }
-
-  async function switchMotion(name, loop = true) {
-    if (!motionFiles[name]) return;
+  async function loadMotion(name, loop = true) {
+    if (name === currentMotionName) return;
+    currentMotionName = name;
 
     if (characterMesh) {
       characterMesh.dispose();
@@ -86,86 +46,57 @@ window.addEventListener('DOMContentLoaded', async () => {
       currentAnimGroup = null;
     }
 
-    const { mesh, skeleton, animGroup } = await loadMotion(name);
-    characterMesh = mesh;
-    currentSkeleton = skeleton;
-    currentAnimGroup = animGroup;
+    const file = motionFiles[name];
+    return new Promise((resolve) => {
+      BABYLON.SceneLoader.ImportMesh("", "/assets/models/", file, scene, (meshes, _, __, animationGroups) => {
+        const mesh = meshes.find(m => m.name !== "__root__");
+        mesh.scaling = new BABYLON.Vector3(0.01, 0.01, 0.01);
+        mesh.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
+        mesh.position = new BABYLON.Vector3(0, 1, 0);
 
-    camera.lockedTarget = characterMesh;
+        characterMesh = mesh;
+        camera.lockedTarget = characterMesh;
 
-    const motion = motionFiles[name];
+        const animGroup = animationGroups[0];
+        if (animGroup) {
+          animGroup.loopAnimation = loop;
+          animGroup.reset();
+          animGroup.play(loop);
+          currentAnimGroup = animGroup;
+        }
 
-    if (currentAnimGroup && currentAnimGroup.targetedAnimations.length > 0) {
-      currentAnimGroup.loopAnimation = loop;
-      currentAnimGroup.reset();
-      currentAnimGroup.play(loop);
-    } else if (currentSkeleton) {
-      scene.beginAnimation(currentSkeleton, motion.start, motion.end, loop);
-    } else {
-      if (infoBox) {
-        infoBox.innerHTML += `<br>⚠️ モーション再生できませんでした`;
-      }
-    }
-  }
-
-  switchMotion("idle");
-
-  function playJumpAnimation() {
-    if (!characterMesh || isJumping) return;
-    isJumping = true;
-
-    const frameRate = 30;
-
-    const jumpAnim = new BABYLON.Animation("jump", "position.y", frameRate,
-      BABYLON.Animation.ANIMATIONTYPE_FLOAT,
-      BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
-
-    const keyFrames = [
-      { frame: 0, value: 1 },
-      { frame: 5, value: 1.3 },
-      { frame: 10, value: 1.7 },
-      { frame: 15, value: 2 },
-      { frame: 20, value: 1.7 },
-      { frame: 25, value: 1.3 },
-      { frame: 30, value: 1 }
-    ];
-
-    jumpAnim.setKeys(keyFrames);
-
-    characterMesh.animations = [];
-    characterMesh.animations.push(jumpAnim);
-
-    scene.beginAnimation(characterMesh, 0, 30, false, 1, () => {
-      isJumping = false;
+        resolve();
+      });
     });
   }
 
+  await loadMotion("idle");
+
   window.addEventListener("keydown", (event) => {
     keysPressed[event.key.toLowerCase()] = true;
-    if (event.key === " ") {
-      playJumpAnimation();
-    }
   });
 
   window.addEventListener("keyup", (event) => {
     keysPressed[event.key.toLowerCase()] = false;
   });
 
-  engine.runRenderLoop(() => {
-    if (characterMesh) {
-      const speed = keysPressed["shift"] ? 0.1 : 0.05;
-      const moving = keysPressed["q"] || keysPressed["c"] || keysPressed["e"] || keysPressed["s"];
+  engine.runRenderLoop(async () => {
+    if (!characterMesh) return;
 
-      if (moving && !isJumping) {
-        if (keysPressed["q"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(-speed, 0, 0));
-        if (keysPressed["c"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(speed, 0, 0));
-        if (keysPressed["e"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(0, 0, -speed));
-        if (keysPressed["s"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(0, 0, speed));
+    const speed = keysPressed["shift"] ? 0.1 : 0.05;
+    const moving = keysPressed["q"] || keysPressed["c"] || keysPressed["e"] || keysPressed["s"];
 
-        switchMotion(keysPressed["shift"] ? "run" : "walk");
-      } else if (!isJumping) {
-        switchMotion("idle");
-      }
+    if (keysPressed[" "]) {
+      await loadMotion("jump", false);
+    } else if (moving) {
+      if (keysPressed["q"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(-speed, 0, 0));
+      if (keysPressed["c"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(speed, 0, 0));
+      if (keysPressed["e"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(0, 0, -speed));
+      if (keysPressed["s"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(0, 0, speed));
+
+      await loadMotion(keysPressed["shift"] ? "run" : "walk");
+    } else {
+      await loadMotion("idle");
     }
 
     scene.render();
