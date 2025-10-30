@@ -108,56 +108,54 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   switchMotion("idle");
 
+  function playJumpAnimation() {
+    if (!characterMesh || isJumping) return;
+    isJumping = true;
+
+    const frameRate = 30;
+
+    const jumpAnim = new BABYLON.Animation("jump", "position.y", frameRate,
+      BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+      BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+
+    const keyFrames = [
+      { frame: 0, value: 1 },
+      { frame: 15, value: 2 },
+      { frame: 30, value: 1 }
+    ];
+
+    jumpAnim.setKeys(keyFrames);
+
+    characterMesh.animations = [];
+    characterMesh.animations.push(jumpAnim);
+
+    scene.beginAnimation(characterMesh, 0, 30, false, 1, () => {
+      isJumping = false;
+    });
+  }
+
   window.addEventListener("keydown", (event) => {
     keysPressed[event.key.toLowerCase()] = true;
+    if (event.key === " ") {
+      playJumpAnimation();
+    }
   });
 
   window.addEventListener("keyup", (event) => {
     keysPressed[event.key.toLowerCase()] = false;
   });
 
-  function handleJump() {
-    if (!characterMesh || isJumping) return;
-    isJumping = true;
-
-    switchMotion("jump", false).then(() => {
-      const jumpHeight = 1.5;
-      const jumpSpeed = 0.08;
-      let jumpUp = true;
-
-      const jumpInterval = setInterval(() => {
-        if (!characterMesh) return;
-
-        if (jumpUp) {
-          characterMesh.position.y += jumpSpeed;
-          if (characterMesh.position.y >= jumpHeight) {
-            jumpUp = false;
-          }
-        } else {
-          characterMesh.position.y -= jumpSpeed;
-          if (characterMesh.position.y <= 1) {
-            characterMesh.position.y = 1;
-            clearInterval(jumpInterval);
-            isJumping = false;
-            switchMotion("idle");
-          }
-        }
-      }, 16);
-    });
-  }
-
   engine.runRenderLoop(() => {
     if (characterMesh) {
       const speed = keysPressed["shift"] ? 0.1 : 0.05;
       const moving = keysPressed["q"] || keysPressed["c"] || keysPressed["e"] || keysPressed["s"];
 
-      if (moving) {
+      if (moving && !isJumping) {
         if (keysPressed["q"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(-speed, 0, 0));
         if (keysPressed["c"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(speed, 0, 0));
         if (keysPressed["e"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(0, 0, -speed));
         if (keysPressed["s"]) characterMesh.moveWithCollisions(new BABYLON.Vector3(0, 0, speed));
 
-        if (keysPressed[" "]) handleJump();
         switchMotion(keysPressed["shift"] ? "run" : "walk");
       } else if (!isJumping) {
         switchMotion("idle");
