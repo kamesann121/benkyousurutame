@@ -31,10 +31,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   let characterMesh = null;
   let currentAnimGroup = null;
   let currentMotionName = "";
+  let isLoading = false;
   const keysPressed = {};
 
-  async function loadMotion(name, loop = true) {
-    if (name === currentMotionName) return;
+  async function loadMotion(name, loop = true, force = false) {
+    if (isLoading) return;
+    if (!force && name === currentMotionName) return;
+    isLoading = true;
     currentMotionName = name;
 
     const lastPosition = characterMesh ? characterMesh.position.clone() : new BABYLON.Vector3(0, 1, 0);
@@ -71,6 +74,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           currentAnimGroup = animGroup;
         }
 
+        isLoading = false;
         resolve();
       });
     });
@@ -85,7 +89,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (!characterMesh) return;
 
     if (key === " ") {
-      await loadMotion("jump", false);
+      await loadMotion("jump", false, true); // ←強制再生！
     } else if (["q", "c", "e", "s"].includes(key)) {
       await loadMotion(keysPressed["shift"] ? "run" : "walk");
     } else {
